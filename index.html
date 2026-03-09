@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时空答案之书 - 深度测评版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        :root{
+            --bg: #0f172a; /* 深空黑 */
+            --cyan: #22d3ee; /* Cyan-400 */
+            --purple: #a855f7; /* Purple-500 */
+            --fg: #f8fafc;
+            --glass: rgba(15, 23, 42, 0.70); /* 透明度 0.7 */
+            --stroke: rgba(255,255,255,0.10);
+        }
+        html, body { height: 100%; }
+        body {
+            background:
+                radial-gradient(1200px 600px at 10% 10%, rgba(168, 85, 247, 0.12), transparent 55%),
+                radial-gradient(1000px 520px at 90% 20%, rgba(34, 211, 238, 0.10), transparent 55%),
+                radial-gradient(800px 500px at 50% 92%, rgba(34, 211, 238, 0.06), transparent 60%),
+                var(--bg);
+            color: var(--fg);
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+            overflow-x: hidden;
+        }
+        .hidden { display: none !important; }
+
+        /* 玻璃拟态卡片：透明度 0.7 + 霓虹勾边 */
+        .glass-card{
+            background: var(--glass);
+            backdrop-filter: blur(14px) saturate(120%);
+            -webkit-backdrop-filter: blur(14px) saturate(120%);
+            border: 1px solid var(--stroke);
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.45),
+                0 0 0 1px rgba(34, 211, 238, 0.06),
+                0 0 44px rgba(34, 211, 238, 0.06);
+        }
+        .neon-edge{ position: relative; }
+        .neon-edge::before{
+            content:"";
+            position:absolute;
+            inset:-1px;
+            border-radius: inherit;
+            pointer-events:none;
+            background: linear-gradient(120deg, rgba(34,211,238,0.24), rgba(168,85,247,0.16), rgba(34,211,238,0.20));
+            filter: blur(10px);
+            opacity: 0.55;
+            animation: aurora 3.2s ease-in-out infinite;
+        }
+        @keyframes aurora{
+            0%,100%{ opacity: .35; transform: translateY(0) scale(1); }
+            50%{ opacity: .65; transform: translateY(-1px) scale(1.02); }
+        }
+        .neon-text{
+            text-shadow:
+                0 0 18px rgba(34, 211, 238, 0.45),
+                0 0 40px rgba(168, 85, 247, 0.20);
+        }
+        .breath-dot{
+            box-shadow: 0 0 0 rgba(34,211,238,0.0);
+            animation: breath 2.4s ease-in-out infinite;
+        }
+        @keyframes breath{
+            0%,100%{ box-shadow: 0 0 0 rgba(34,211,238,0.0), 0 0 12px rgba(34,211,238,0.24); }
+            50%{ box-shadow: 0 0 18px rgba(34,211,238,0.45), 0 0 40px rgba(168,85,247,0.18); }
+        }
+
+        /* 题目页：每题垂直居中 + 切题动画 */
+        .quiz-step{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            min-height: calc(100svh - 220px);
+            padding: 18px 0;
+        }
+        .step-in{ animation: stepIn .55s cubic-bezier(.2,.9,.2,1) both; }
+        .step-out{ animation: stepOut .28s ease both; }
+        @keyframes stepIn{
+            from{ opacity: 0; transform: translateY(14px) scale(0.995); filter: blur(2px); }
+            to{ opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @keyframes stepOut{
+            from{ opacity: 1; transform: translateY(0); }
+            to{ opacity: 0; transform: translateY(-8px); }
+        }
+
+        .option-btn{
+            width: 100%;
+            max-width: 320px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            transition: transform .12s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .option-btn:active{ transform: scale(0.98); }
+        .soft-btn{
+            background: rgba(2, 6, 23, 0.50);
+            border: 1px solid rgba(255,255,255,0.09);
+        }
+        .soft-btn:hover{
+            background: rgba(15, 23, 42, 0.65);
+            border-color: rgba(34,211,238,0.25);
+            box-shadow: 0 0 0 1px rgba(34,211,238,0.12), 0 0 24px rgba(34,211,238,0.10);
+        }
+
+        /* 付费墙模糊 */
+        .pay-blur{
+            filter: blur(10px);
+            opacity: 0.72;
+            pointer-events: none;
+            user-select: none;
+        }
+        .lock-shell{
+            background: rgba(2, 6, 23, 0.72);
+            backdrop-filter: blur(18px) saturate(120%);
+            -webkit-backdrop-filter: blur(18px) saturate(120%);
+            border: 1px solid rgba(245, 158, 11, 0.24);
+            box-shadow:
+                0 18px 70px rgba(0,0,0,0.55),
+                0 0 0 1px rgba(245, 158, 11, 0.10);
+        }
+
+        /* 截图模式：收敛发光，避免边缘溢出 */
+        .is-capturing .neon-edge::before{ opacity: 0.20; filter: blur(6px); }
+        .is-capturing .breath-dot{ animation: none; }
+        .is-capturing .poster-actions{ display: none !important; }
+
+        /* 坐标图文字描边：提高可读性（避免与网格叠色） */
+        #coord-plot text{
+            paint-order: stroke;
+            stroke: rgba(2, 6, 23, 0.82);
+            stroke-width: 3px;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-start min-h-screen p-4 pb-10">
+
+    <div id="capture-area" class="w-full max-w-[520px]">
+        <div id="header-area" class="text-center mt-4 mb-6">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border border-white/10">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 breath-dot"></span>
+                <span class="text-[11px] tracking-[0.32em] text-slate-200/90">TIME · SPACE · ANSWER</span>
+            </div>
+            <h1 class="mt-5 text-3xl font-black tracking-[0.22em] text-cyan-300 neon-text">时空答案之书</h1>
+            <p class="mt-2 text-slate-300/70 text-xs italic">闭眼默念你的问题，由当下时空给出指引</p>
+        </div>
+
+        <div id="app" class="glass-card neon-edge w-full rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col min-h-[78svh]">
+            
+            <div id="progress-bar" class="w-full h-1 bg-slate-800 rounded-full mb-6">
+                <div id="progress-inner" class="h-full rounded-full transition-all duration-300" style="width: 11%; background: linear-gradient(90deg, rgba(34,211,238,1), rgba(168,85,247,0.9)); box-shadow: 0 0 24px rgba(34,211,238,0.18);"></div>
+            </div>
+
+            <div id="quiz-container" class="flex-1">
+                <div id="q1" class="quiz-step step-in">
+                    <h2 class="text-xl font-bold mb-8 text-center">1. 在 1-10 之间灵光一现的数字</h2>
+                    <input type="number" id="input-num" min="1" max="10" placeholder="输入 1-10" 
+                           class="w-full max-w-[220px] bg-slate-950/40 border border-white/10 rounded-2xl p-4 text-3xl text-center mb-8 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20">
+                    <button onclick="next(1)" class="option-btn soft-btn p-4 rounded-2xl font-bold text-cyan-200 border-cyan-400/20">确定</button>
+                </div>
+
+                <div id="q2" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">2. 挑选一个当下的本能颜色</h2>
+                    <div class="grid grid-cols-1 gap-3 w-full max-w-[300px]" id="color-options"></div>
+                </div>
+
+                <div id="q3" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">3. 抬头看或感受现在的天气</h2>
+                    <div class="grid grid-cols-2 gap-3 w-full max-w-[300px]" id="weather-options"></div>
+                </div>
+
+                <div id="q4" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-2 text-center">4. 你目前的心情 (多选)</h2>
+                    <p class="text-xs text-gray-500 mb-6 text-center italic">选择 1-3 个最贴切的</p>
+                    <div class="grid grid-cols-2 gap-3 mb-8 w-full max-w-[300px]" id="mood-options"></div>
+                    <button onclick="next(4)" class="option-btn soft-btn p-4 rounded-2xl font-bold text-cyan-200 border-cyan-400/20">选好了</button>
+                </div>
+
+                <div id="q5" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">5. 现在最想喝的一杯</h2>
+                    <div class="grid grid-cols-1 gap-3 w-full max-w-[300px]" id="drink-options"></div>
+                </div>
+
+                <div id="q6" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">6. 你会买哪种花送给自己</h2>
+                    <div class="grid grid-cols-1 gap-3 w-full max-w-[300px]" id="flower-options"></div>
+                </div>
+
+                <div id="q7" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">7. 第一眼直觉看中的形状</h2>
+                    <div class="grid grid-cols-2 gap-6 w-full max-w-[320px]" id="shape-options"></div>
+                </div>
+
+                <div id="q8" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">8. 想瞬间移动到的目的地</h2>
+                    <div class="grid grid-cols-1 gap-3 w-full max-w-[300px]" id="travel-options"></div>
+                </div>
+
+                <div id="q9" class="quiz-step hidden">
+                    <h2 class="text-xl font-bold mb-8 text-center">9. 想要哪种灵魂伴侣</h2>
+                    <div class="grid grid-cols-1 gap-3 w-full max-w-[300px]" id="pet-options"></div>
+                </div>
+            </div>
+
+            <div id="result-page" class="hidden pb-4">
+                <!-- 直接显示最终结果：答案 + 总结 + 坐标图 + 三卡 + 保存海报 -->
+                <div id="result-detail">
+                    <div id="poster" class="space-y-5">
+                        <div class="glass-card rounded-3xl p-6 border border-white/10">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] tracking-[0.32em] text-slate-200/70">测评报告</span>
+                                <span id="result-tag" class="text-[10px] px-2 py-1 rounded-full border border-cyan-400/20 text-cyan-200 bg-cyan-400/5">已完成</span>
+                            </div>
+                            <div class="mt-5 text-center">
+                                <p class="text-slate-300/70 text-xs tracking-widest">时空计算完成</p>
+                                <h2 id="final-answer-2" class="mt-2 text-[88px] leading-[0.95] font-black italic neon-text"></h2>
+                                <p id="coord-line" class="mt-4 text-[11px] text-slate-300/60 leading-relaxed"></p>
+                            </div>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-4 border border-white/10">
+                            <p id="summary-text" class="text-slate-200/90 text-sm leading-relaxed text-center"></p>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-5 border border-white/10">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-[12px] tracking-[0.26em] text-cyan-200">点状坐标图</h3>
+                                <span id="plot-hint" class="text-[10px] text-slate-200/60">坐标由你的 9 个选择生成</span>
+                            </div>
+                            <div class="rounded-2xl bg-slate-950/30 border border-white/10 p-3 overflow-hidden">
+                                <svg id="coord-plot" viewBox="0 0 360 170" class="w-full h-[170px]" aria-label="点状坐标图"></svg>
+                            </div>
+                            <div class="mt-3 grid grid-cols-1 gap-3">
+                                <div class="text-[10px] text-slate-200/60 leading-relaxed">
+                                    <div><span class="text-slate-200/75">横轴</span>：理性（结构/计划） ←→ 直觉（冲动/灵感）</div>
+                                    <div><span class="text-slate-200/75">纵轴</span>：收敛（稳态/防御） ←→ 发散（冒险/创造）</div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/20 p-3">
+                                        <div class="flex items-center justify-between text-[10px] text-slate-200/65">
+                                            <span>直觉强度</span>
+                                            <span id="x-pct" class="text-slate-100/85">—</span>
+                                        </div>
+                                        <div class="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
+                                            <div id="x-bar" class="h-full rounded-full" style="width:0%; background: linear-gradient(90deg, rgba(34,211,238,0.95), rgba(168,85,247,0.90));"></div>
+                                        </div>
+                                    </div>
+                                    <div class="rounded-2xl border border-white/10 bg-slate-950/20 p-3">
+                                        <div class="flex items-center justify-between text-[10px] text-slate-200/65">
+                                            <span>发散强度</span>
+                                            <span id="y-pct" class="text-slate-100/85">—</span>
+                                        </div>
+                                        <div class="mt-2 h-2 rounded-full bg-white/5 overflow-hidden">
+                                            <div id="y-bar" class="h-full rounded-full" style="width:0%; background: linear-gradient(90deg, rgba(168,85,247,0.90), rgba(34,211,238,0.95));"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl border border-white/10 bg-slate-950/20 p-3">
+                                    <div class="text-[10px] tracking-[0.18em] text-slate-200/55">你当前落点</div>
+                                    <div id="plot-verdict" class="mt-2 text-[12px] text-slate-100/90 leading-relaxed"></div>
+                                    <div id="plot-tags" class="mt-3 flex flex-wrap gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="modules" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="glass-card rounded-3xl p-5 border border-white/10">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-[12px] tracking-[0.26em] text-cyan-200">内在动机</h3>
+                                    <span class="text-[10px] text-slate-200/60">数字 · 形状 · 花</span>
+                                </div>
+                                <p id="card-inner" class="text-[12px] leading-relaxed text-slate-100/90"></p>
+                            </div>
+
+                            <div class="glass-card rounded-3xl p-5 border border-white/10">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-[12px] tracking-[0.26em] text-purple-200">即时场强</h3>
+                                    <span class="text-[10px] text-slate-200/60">天气 · 心情 · 饮料</span>
+                                </div>
+                                <p id="card-field" class="text-[12px] leading-relaxed text-slate-100/90"></p>
+                            </div>
+
+                            <div class="glass-card rounded-3xl p-5 border border-white/10">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="text-[12px] tracking-[0.26em] text-cyan-200">未来预判</h3>
+                                    <span class="text-[10px] text-slate-200/60">旅行 · 宠物 · 趋势</span>
+                                </div>
+                                <p id="card-future" class="text-[12px] leading-relaxed text-slate-100/90"></p>
+                            </div>
+                        </div>
+
+                        <div class="poster-actions pt-2 flex flex-col items-center gap-3">
+                            <button onclick="takeScreenshot()" class="w-full option-btn soft-btn py-3 rounded-2xl text-cyan-200 border-cyan-400/20">保存海报（长图）</button>
+                            <button onclick="location.reload()" class="w-full py-2 text-[10px] text-slate-200/40 underline">重新开启时空</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = { score: 0, choices: {} };
+        const moods = [];
+        const moodScoreMap = new Map();
+
+        const options = {
+            colors: [['红色', 5, 'bg-red-500'], ['蓝色', 3, 'bg-blue-500'], ['紫色', 6, 'bg-purple-500'], ['绿色', 2, 'bg-green-500'], ['黄色', 4, 'bg-yellow-500']],
+            weathers: [['晴天 ☀️', 5], ['阴天 ☁️', 3], ['雨天 🌧️', 1], ['雪天 ❄️', 2]],
+            moods: [['平静 😌', 2], ['愤怒 😡', 5], ['悲伤 😢', 1], ['喜悦 😃', 6], ['焦虑 😰', 4], ['痛苦 😫', 3]],
+            drinks: [['碳酸饮料 🥤', 4], ['奶茶 🧋', 5], ['咖啡 ☕', 6], ['纯净水 💧', 2], ['茶 🍵', 3]],
+            flowers: [['玫瑰 🌹', 5], ['雏菊 🌼', 3], ['百合 🌸', 4], ['芍药 🌺', 6], ['都不买 🚫', 1]],
+            travels: [['海边 🌊', 5], ['沙漠 🏜️', 4], ['森林 🌲', 3], ['动物园 🐼', 2], ['游乐场 🎡', 6]],
+            pets: [['狗 🐶', 5], ['猫 🐱', 4], ['鱼 🐟', 2], ['鸟 🐦', 3], ['爬宠 🦎', 6]]
+        };
+
+        const SHAPES = [
+            {
+                key: '圆性',
+                score: 5,
+                label: '图形 A · 圆性',
+                svg: `
+                    <svg viewBox="0 0 120 120" width="78" height="78" aria-label="圆性">
+                        <defs>
+                            <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="rgba(34,211,238,1)"/>
+                                <stop offset="1" stop-color="rgba(168,85,247,0.95)"/>
+                            </linearGradient>
+                            <filter id="glowA" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2.6" result="b"/>
+                                <feMerge>
+                                    <feMergeNode in="b"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g fill="none" stroke="url(#gA)" stroke-width="2.4" filter="url(#glowA)" opacity="0.95">
+                            <circle cx="60" cy="60" r="44" opacity="0.18"/>
+                            <circle cx="60" cy="60" r="36" opacity="0.26"/>
+                            <circle cx="60" cy="60" r="28" opacity="0.40"/>
+                            <circle cx="60" cy="60" r="20" opacity="0.62"/>
+                            <circle cx="60" cy="60" r="12" opacity="0.92"/>
+                        </g>
+                        <circle cx="60" cy="60" r="2.4" fill="rgba(34,211,238,0.95)"/>
+                    </svg>
+                `
+            },
+            {
+                key: '尖锐',
+                score: 6,
+                label: '图形 B · 尖锐',
+                svg: `
+                    <svg viewBox="0 0 120 120" width="78" height="78" aria-label="尖锐">
+                        <defs>
+                            <linearGradient id="gB" x1="1" y1="0" x2="0" y2="1">
+                                <stop offset="0" stop-color="rgba(168,85,247,1)"/>
+                                <stop offset="1" stop-color="rgba(34,211,238,0.92)"/>
+                            </linearGradient>
+                            <filter id="glowB" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2.4" result="b"/>
+                                <feMerge>
+                                    <feMergeNode in="b"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g fill="none" stroke="url(#gB)" stroke-width="2.2" filter="url(#glowB)" opacity="0.95">
+                            <path d="M20 85 L50 30 L80 85 Z" opacity="0.58"/>
+                            <path d="M40 92 L70 42 L105 92 Z" opacity="0.38"/>
+                            <path d="M10 70 L30 38 L52 70 Z" opacity="0.64"/>
+                            <path d="M56 78 L74 50 L92 78 Z" opacity="0.82"/>
+                        </g>
+                        <path d="M18 92 L102 28" stroke="rgba(34,211,238,0.22)" stroke-width="1.2" />
+                    </svg>
+                `
+            },
+            {
+                key: '平衡',
+                score: 4,
+                label: '图形 C · 平衡',
+                svg: `
+                    <svg viewBox="0 0 120 120" width="78" height="78" aria-label="平衡">
+                        <defs>
+                            <linearGradient id="gC" x1="0" y1="1" x2="1" y2="0">
+                                <stop offset="0" stop-color="rgba(34,211,238,1)"/>
+                                <stop offset="1" stop-color="rgba(168,85,247,0.90)"/>
+                            </linearGradient>
+                            <filter id="glowC" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2.2" result="b"/>
+                                <feMerge>
+                                    <feMergeNode in="b"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g fill="none" stroke="url(#gC)" stroke-width="2.2" filter="url(#glowC)" opacity="0.95">
+                            <rect x="22" y="22" width="76" height="76" opacity="0.34"/>
+                            <rect x="32" y="32" width="56" height="56" opacity="0.54"/>
+                            <rect x="42" y="42" width="36" height="36" opacity="0.74"/>
+                            <rect x="52" y="52" width="16" height="16" opacity="0.95"/>
+                        </g>
+                        <path d="M22 60 H98" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+                        <path d="M60 22 V98" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+                    </svg>
+                `
+            },
+            {
+                key: '弥散',
+                score: 5,
+                label: '图形 D · 弥散',
+                svg: `
+                    <svg viewBox="0 0 120 120" width="78" height="78" aria-label="弥散">
+                        <defs>
+                            <linearGradient id="gD" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0" stop-color="rgba(168,85,247,1)"/>
+                                <stop offset="1" stop-color="rgba(34,211,238,0.95)"/>
+                            </linearGradient>
+                            <filter id="glowD" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2.5" result="b"/>
+                                <feMerge>
+                                    <feMergeNode in="b"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g fill="none" stroke="url(#gD)" stroke-width="2.2" filter="url(#glowD)" opacity="0.95">
+                            <path d="M60 18 L68 46 L98 46 L72 62 L82 92 L60 73 L38 92 L48 62 L22 46 L52 46 Z" opacity="0.62"/>
+                            <path d="M60 26 L66 48 L90 48 L70 60 L78 84 L60 70 L42 84 L50 60 L30 48 L54 48 Z" opacity="0.38"/>
+                        </g>
+                        <circle cx="60" cy="60" r="3" fill="rgba(34,211,238,0.85)"/>
+                    </svg>
+                `
+            }
+        ];
+
+        const QUOTE_BANK = {
+            // 20 组金句库（组合时会去重，避免重复解析）
+            q01_open_yes: [
+                "你不是在赌运气，你是在等一个足够干净的时刻。",
+                "这不是幸运，这是你长期压抑之后的回声。",
+                "你问的不是结果，是你能不能配得上那个结果。"
+            ],
+            q02_open_no: [
+                "不是不行，是你现在的代价太贵。",
+                "你缺的不是勇气，是一把能切断牵绊的刀。",
+                "别急，答案在拖延你，是在保护你。"
+            ],
+            q03_sting: [
+                "你想要的并不复杂，复杂的是你不肯承认的欲望。",
+                "你反复纠结的地方，正是你最怕失去自尊的地方。",
+                "你嘴上说随缘，其实一直在等对方先低头。"
+            ],
+            q04_num: [
+                "数字像一道暗号：越靠近极端，越容易走向极端。",
+                "数字不是占卜，是你潜意识给自己的打分。",
+                "你选的数字在提醒：不要再用小聪明做大决定。"
+            ],
+            q05_color: [
+                "颜色是你的盔甲：它暴露了你最想遮住的部分。",
+                "你挑的颜色，说明你此刻更需要被理解，而不是被建议。",
+                "你用颜色表达情绪，只是你不想用语言承认。"
+            ],
+            q06_shape: [
+                "形状是你面对世界的姿态：圆、尖、方、星各自有代价。",
+                "直觉选中的形状，往往和你近期最常用的防御一致。",
+                "你的形状选择，暴露了你在“控制”和“放手”之间的偏执。"
+            ],
+            q07_flower: [
+                "花不是浪漫，是你给自己的补偿。",
+                "你会送给自己的那束花，藏着你最想被肯定的一面。",
+                "你不买花的那一刻，也是在拒绝被拯救。"
+            ],
+            q08_mood: [
+                "你选的心情不是今天的，是最近一段时间积攒的。",
+                "情绪越混杂，越说明你正在经历一次自我重排。",
+                "你其实很清醒，只是你不想让清醒显得冷。"
+            ],
+            q09_weather: [
+                "天气是一种暗示：它让你把责任推给“时机”。",
+                "你把天气当成答案，其实是在偷看自己的胆量。",
+                "天象不决定你，但它揭穿你。"
+            ],
+            q10_drink: [
+                "你想喝的那杯，是你对自己的奖惩机制。",
+                "你用饮料给自己找一个理由继续撑下去。",
+                "你不是口渴，你是需要一个“暂停”。"
+            ],
+            q11_travel: [
+                "你想去的地方，是你最想逃开的现场。",
+                "目的地不是远方，是你理想中的“无人打扰”。",
+                "你以为你在想旅行，其实你在想重启。"
+            ],
+            q12_pet: [
+                "你想要的灵魂伴侣，不是陪伴，是一种被允许。",
+                "你选的动物，代表你渴望的相处边界。",
+                "你要的不是爱，是一份不被追问的安静。"
+            ],
+            q13_inner_motive: [
+                "你的内在动机只有两种：要么证明自己，要么保护自己。",
+                "你越想掌控，越说明你曾经失控过。",
+                "你想要的安全感，来自“可预期”。"
+            ],
+            q14_field_strength: [
+                "你的场强不是低，是被多线程消耗了。",
+                "你现在的能量像未校准的指针，偏一点就会刺痛自己。",
+                "你需要的不是更多努力，是更少解释。"
+            ],
+            q15_future: [
+                "未来不是预测，是你敢不敢做减法。",
+                "你下一步的行动，决定你未来三个月的气质。",
+                "别想着一步到位，先让自己不再委屈。"
+            ],
+            q16_action_yes: [
+                "答案是“是”，但你必须先立一个边界：不求满分，只求干净。",
+                "答案是“是”，真正的考题是你能不能坚持到最后一分钟。",
+                "答案是“是”，但不要急着公开，你需要一个低调的推进期。"
+            ],
+            q17_action_no: [
+                "答案是“否”，你要做的不是放弃，而是换一种代价更小的方式。",
+                "答案是“否”，最聪明的选择是暂存而非硬闯。",
+                "答案是“否”，你越想证明，越会输在情绪上。"
+            ],
+            q18_signature: [
+                "你不是脆弱，你只是太久没被认真对待。",
+                "你比你想的更狠，只是你还在装温柔。",
+                "你最致命的优点，是你愿意把一切都扛在自己身上。"
+            ],
+            q19_private: [
+                "这份报告看起来像占卜，其实是你在对自己说真话。",
+                "你以为这是测试，实际上是一次“自我交代”。",
+                "你会被戳中，是因为你早就知道答案。"
+            ],
+            q20_tail: [
+                "把今天当作一个节点：从这里起，不再为不值得的人消耗。",
+                "你要记住：任何让你变小的关系，都不是答案。",
+                "你可以心软，但别再为同一个坑付第二次学费。"
+            ]
+        };
+
+        function hashString(str) {
+            let h = 2166136261;
+            for (let i = 0; i < str.length; i++) {
+                h ^= str.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            }
+            return (h >>> 0);
+        }
+        function pickUnique(arr, seed, used) {
+            if (!arr || arr.length === 0) return "";
+            const base = seed % arr.length;
+            for (let i = 0; i < arr.length; i++) {
+                const s = arr[(base + i) % arr.length];
+                if (!used.has(s)) {
+                    used.add(s);
+                    return s;
+                }
+            }
+            return arr[base];
+        }
+
+        function assembleCopy() {
+            const yes = state.score > 28;
+            const baseKey = [
+                state.choices.num,
+                state.choices.color,
+                state.choices.weather,
+                moods.join('|'),
+                state.choices.drink,
+                state.choices.flower,
+                state.choices.shape,
+                state.choices.travel,
+                state.choices.pet
+            ].join('::');
+            const seed = hashString(baseKey);
+            const used = new Set();
+
+            const open = pickUnique(yes ? QUOTE_BANK.q01_open_yes : QUOTE_BANK.q02_open_no, seed + 1, used);
+            const sting = pickUnique(QUOTE_BANK.q03_sting, seed + 2, used);
+            const sign = pickUnique(QUOTE_BANK.q18_signature, seed + 3, used);
+            const privateLine = pickUnique(QUOTE_BANK.q19_private, seed + 4, used);
+            const tail = pickUnique(QUOTE_BANK.q20_tail, seed + 5, used);
+
+            const numLine = pickUnique(QUOTE_BANK.q04_num, seed + 6, used);
+            const colorLine = pickUnique(QUOTE_BANK.q05_color, seed + 7, used);
+            const shapeLine = pickUnique(QUOTE_BANK.q06_shape, seed + 8, used);
+            const flowerLine = pickUnique(QUOTE_BANK.q07_flower, seed + 9, used);
+
+            const moodLine = pickUnique(QUOTE_BANK.q08_mood, seed + 10, used);
+            const weatherLine = pickUnique(QUOTE_BANK.q09_weather, seed + 11, used);
+            const drinkLine = pickUnique(QUOTE_BANK.q10_drink, seed + 12, used);
+
+            const travelLine = pickUnique(QUOTE_BANK.q11_travel, seed + 13, used);
+            const petLine = pickUnique(QUOTE_BANK.q12_pet, seed + 14, used);
+
+            const innerMotive = pickUnique(QUOTE_BANK.q13_inner_motive, seed + 15, used);
+            const field = pickUnique(QUOTE_BANK.q14_field_strength, seed + 16, used);
+            const future = pickUnique(QUOTE_BANK.q15_future, seed + 17, used);
+
+            const action = pickUnique(yes ? QUOTE_BANK.q16_action_yes : QUOTE_BANK.q17_action_no, seed + 18, used);
+
+            const stabLine = `${open} ${sting}`;
+            const summary = `宇宙此刻已读。你用数字 ${state.choices.num}、颜色「${state.choices.color}」与直觉形状「${state.choices.shape}」给自己签了名。${colorLine} ${sign} ${privateLine}`;
+
+            const card1 = `【潜意识画像】${numLine} ${shapeLine} 你会选择「${state.choices.flower}」送给自己：${flowerLine} ${innerMotive}`;
+            const card2 = `【当下能量】你说自己是「${moods.join('、') || '（未选择）'}」，同时想喝「${state.choices.drink}」。${moodLine} ${drinkLine} 外界以「${state.choices.weather}」的方式回应你：${weatherLine} ${field}`;
+            const trend = yes
+                ? (state.score >= 40 ? "强势推进（但别用力过猛）" : "稳步靠近（把节奏握在你手里）")
+                : (state.score <= 22 ? "及时止损（先把自己捞出来）" : "暂缓观望（别在情绪里做决定）");
+            const card3 = `【行动指引】你想瞬移到「${state.choices.travel}」，并渴望「${state.choices.pet}」式的陪伴。选择趋势：${trend}。${travelLine} ${petLine} ${future} ${action} ${tail}`;
+
+            const coord = `${state.choices.num} · ${state.choices.color} · ${state.choices.weather} · ${moods.join('、') || '无心情'} · ${state.choices.drink} · ${state.choices.flower} · ${state.choices.shape} · ${state.choices.travel} · ${state.choices.pet}`;
+            const tag = yes ? "YES · 通畅" : "NO · 阻滞";
+            return { yes, stabLine, summary, card1, card2, card3, coord, tag };
+        }
+
+        function renderOptions() {
+            document.getElementById('color-options').innerHTML = options.colors.map(c => `
+                <button onclick="pick('color', '${c[0]}', ${c[1]})" class="option-btn soft-btn flex justify-between items-center p-4 rounded-2xl">
+                    <span class="text-slate-100/90">${c[0]}</span>
+                    <span class="w-3 h-3 rounded-full ${c[2]} breath-dot"></span>
+                </button>
+            `).join('');
+
+            document.getElementById('weather-options').innerHTML = options.weathers.map(w => `
+                <button onclick="pick('weather', '${w[0]}', ${w[1]})" class="soft-btn p-4 rounded-2xl text-sm">
+                    ${w[0]}
+                </button>
+            `).join('');
+
+            document.getElementById('mood-options').innerHTML = options.moods.map(m => `
+                <button id="mood-${m[0]}" onclick="toggleMood('${m[0]}', ${m[1]})" class="soft-btn p-4 rounded-2xl border border-white/10 transition text-xs">
+                    ${m[0]}
+                </button>
+            `).join('');
+
+            document.getElementById('drink-options').innerHTML = options.drinks.map(d => `
+                <button onclick="pick('drink', '${d[0]}', ${d[1]})" class="option-btn soft-btn p-4 rounded-2xl text-left">
+                    ${d[0]}
+                </button>
+            `).join('');
+
+            document.getElementById('flower-options').innerHTML = options.flowers.map(f => `
+                <button onclick="pick('flower', '${f[0]}', ${f[1]})" class="option-btn soft-btn p-4 rounded-2xl text-left">
+                    ${f[0]}
+                </button>
+            `).join('');
+
+            document.getElementById('shape-options').innerHTML = SHAPES.map(s => `
+                <button onclick="pick('shape', '${s.key}', ${s.score})" class="soft-btn p-5 rounded-3xl flex flex-col items-center justify-center gap-2">
+                    <div class="opacity-95">${s.svg}</div>
+                    <div class="text-[10px] text-slate-200/70 tracking-wide">${s.label}</div>
+                </button>
+            `).join('');
+
+            document.getElementById('travel-options').innerHTML = options.travels.map(t => `
+                <button onclick="pick('travel', '${t[0]}', ${t[1]})" class="option-btn soft-btn p-4 rounded-2xl text-left">
+                    ${t[0]}
+                </button>
+            `).join('');
+
+            document.getElementById('pet-options').innerHTML = options.pets.map(p => `
+                <button onclick="pick('pet', '${p[0]}', ${p[1]})" class="option-btn soft-btn p-4 rounded-2xl text-left">
+                    ${p[0]}
+                </button>
+            `).join('');
+        }
+
+        function toggleMood(mood, s) {
+            const idx = moods.indexOf(mood);
+            const btn = document.getElementById(`mood-${mood}`);
+            if (idx > -1) {
+                moods.splice(idx, 1);
+                const prev = moodScoreMap.get(mood) || 0;
+                state.score -= prev;
+                moodScoreMap.delete(mood);
+                btn.classList.remove('border-cyan-400/40', 'bg-slate-900/40');
+            } else if (moods.length < 3) {
+                moods.push(mood);
+                moodScoreMap.set(mood, s);
+                state.score += s;
+                btn.classList.add('border-cyan-400/40', 'bg-slate-900/40');
+            }
+        }
+
+        function getActiveStep() {
+            const el = document.querySelector('.quiz-step:not(.hidden)');
+            if (!el) return null;
+            const id = el.id || '';
+            if (!id.startsWith('q')) return null;
+            return parseInt(id.substring(1), 10);
+        }
+        function switchStep(currentStep, nextStep) {
+            const currentEl = document.getElementById(`q${currentStep}`);
+            const nextEl = document.getElementById(`q${nextStep}`);
+            if (!currentEl || !nextEl) return;
+
+            currentEl.classList.remove('step-in');
+            currentEl.classList.add('step-out');
+            window.setTimeout(() => {
+                currentEl.classList.add('hidden');
+                currentEl.classList.remove('step-out');
+
+                nextEl.classList.remove('hidden');
+                nextEl.classList.remove('step-in');
+                void nextEl.offsetWidth;
+                nextEl.classList.add('step-in');
+            }, 220);
+        }
+
+        function next(currentStep) {
+            if (currentStep === 1) {
+                const n = document.getElementById('input-num').value;
+                if (!n || n < 1 || n > 10) return alert('请输入 1-10 的数字');
+                state.score += parseInt(n, 10);
+                state.choices.num = n;
+            }
+
+            const nextStep = currentStep + 1;
+            if (nextStep <= 9) {
+                switchStep(currentStep, nextStep);
+                document.getElementById('progress-inner').style.width = (nextStep / 9 * 100) + '%';
+            } else {
+                // 当前 step-out 动画后再出结果，避免突兀
+                const currentEl = document.getElementById(`q${currentStep}`);
+                if (currentEl) {
+                    currentEl.classList.add('step-out');
+                    window.setTimeout(() => showResult(), 180);
+                } else {
+                    showResult();
+                }
+            }
+        }
+
+        function pick(type, val, s) {
+            state.choices[type] = val;
+            state.score += s;
+            const current = getActiveStep();
+            if (current) next(current);
+        }
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('progress-bar').classList.add('hidden');
+            document.getElementById('header-area').classList.add('hidden');
+            document.getElementById('result-page').classList.remove('hidden');
+
+            const copy = assembleCopy();
+            document.getElementById('result-tag').innerText = copy.tag;
+            document.getElementById('summary-text').innerText = copy.summary;
+
+            const fa2 = document.getElementById('final-answer-2');
+            if (fa2) {
+                fa2.innerText = copy.yes ? "是" : "否";
+                fa2.classList.toggle('text-cyan-300', copy.yes);
+                fa2.classList.toggle('text-purple-300', !copy.yes);
+            }
+            const coordEl = document.getElementById('coord-line');
+            if (coordEl) coordEl.innerText = `你留下的坐标：${copy.coord}`;
+
+            document.getElementById('card-inner').innerText = copy.card1;
+            document.getElementById('card-field').innerText = copy.card2;
+            document.getElementById('card-future').innerText = copy.card3;
+
+            renderCoordPlot();
+        }
+
+        function getScoreFromOptions(list, val) {
+            const hit = (list || []).find(x => x[0] === val);
+            return hit ? hit[1] : 0;
+        }
+        function getShapeScore(val) {
+            const hit = SHAPES.find(s => s.key === val);
+            return hit ? hit.score : 0;
+        }
+
+        function renderCoordPlot() {
+            const svg = document.getElementById('coord-plot');
+            if (!svg) return;
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+            const NS = 'http://www.w3.org/2000/svg';
+            const w = 360, h = 170;
+            const padX = 18, padY = 14;
+
+            // 计算坐标（由 9 个选择映射）
+            const numScore = parseInt(state.choices.num || '0', 10) || 0;
+            const moodSum = Array.from(moodScoreMap.values()).reduce((a, b) => a + b, 0);
+            const xRaw = numScore + getShapeScore(state.choices.shape) + moodSum; // max ~ 31
+            const yRaw =
+                getScoreFromOptions(options.weathers, state.choices.weather) +
+                getScoreFromOptions(options.drinks, state.choices.drink) +
+                getScoreFromOptions(options.flowers, state.choices.flower) +
+                getScoreFromOptions(options.travels, state.choices.travel) +
+                getScoreFromOptions(options.pets, state.choices.pet); // max ~ 29
+
+            const x = Math.max(0, Math.min(1, xRaw / 31));
+            const y = Math.max(0, Math.min(1, yRaw / 29));
+            const cx = padX + x * (w - padX * 2);
+            const cy = padY + (1 - y) * (h - padY * 2);
+            const midX = padX + (w - padX * 2) / 2;
+            const midY = padY + (h - padY * 2) / 2;
+
+            const hint = document.getElementById('plot-hint');
+            if (hint) hint.innerText = '更直观的“人格坐标”：网格=刻度，中心=基准点，光点=你当前状态';
+
+            // 仪表百分比
+            const xPct = Math.round(x * 100);
+            const yPct = Math.round(y * 100);
+            const xPctEl = document.getElementById('x-pct');
+            const yPctEl = document.getElementById('y-pct');
+            const xBar = document.getElementById('x-bar');
+            const yBar = document.getElementById('y-bar');
+            if (xPctEl) xPctEl.innerText = `${xPct}%`;
+            if (yPctEl) yPctEl.innerText = `${yPct}%`;
+            if (xBar) xBar.style.width = `${xPct}%`;
+            if (yBar) yBar.style.width = `${yPct}%`;
+
+            // defs：渐变 + glow
+            const defs = document.createElementNS(NS, 'defs');
+            const lg = document.createElementNS(NS, 'linearGradient');
+            lg.setAttribute('id', 'plotGrad');
+            lg.setAttribute('x1', '0'); lg.setAttribute('y1', '0');
+            lg.setAttribute('x2', '1'); lg.setAttribute('y2', '1');
+            const s1 = document.createElementNS(NS, 'stop');
+            s1.setAttribute('offset', '0');
+            s1.setAttribute('stop-color', 'rgba(34,211,238,1)');
+            const s2 = document.createElementNS(NS, 'stop');
+            s2.setAttribute('offset', '1');
+            s2.setAttribute('stop-color', 'rgba(168,85,247,0.95)');
+            lg.appendChild(s1); lg.appendChild(s2);
+
+            const filter = document.createElementNS(NS, 'filter');
+            filter.setAttribute('id', 'plotGlow');
+            filter.setAttribute('x', '-50%'); filter.setAttribute('y', '-50%');
+            filter.setAttribute('width', '200%'); filter.setAttribute('height', '200%');
+            const blur = document.createElementNS(NS, 'feGaussianBlur');
+            blur.setAttribute('stdDeviation', '2.4');
+            blur.setAttribute('result', 'b');
+            const merge = document.createElementNS(NS, 'feMerge');
+            const mn1 = document.createElementNS(NS, 'feMergeNode');
+            mn1.setAttribute('in', 'b');
+            const mn2 = document.createElementNS(NS, 'feMergeNode');
+            mn2.setAttribute('in', 'SourceGraphic');
+            merge.appendChild(mn1); merge.appendChild(mn2);
+            filter.appendChild(blur);
+            filter.appendChild(merge);
+
+            defs.appendChild(lg);
+            defs.appendChild(filter);
+            svg.appendChild(defs);
+
+            // 背景网格（点阵 + 细网格线）——不放解释文字，避免重叠
+            const cols = 24, rows = 10;
+            for (let i = 0; i <= cols; i++) {
+                const xg = padX + (i / cols) * (w - padX * 2);
+                const line = document.createElementNS(NS, 'path');
+                line.setAttribute('d', `M${xg.toFixed(2)} ${padY} V${(h - padY).toFixed(2)}`);
+                line.setAttribute('stroke', 'rgba(255,255,255,0.035)');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+            }
+            for (let i = 0; i <= rows; i++) {
+                const yg = padY + (i / rows) * (h - padY * 2);
+                const line = document.createElementNS(NS, 'path');
+                line.setAttribute('d', `M${padX} ${yg.toFixed(2)} H${(w - padX).toFixed(2)}`);
+                line.setAttribute('stroke', 'rgba(255,255,255,0.035)');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+            }
+            for (let r = 0; r <= rows; r++) {
+                for (let c = 0; c <= cols; c++) {
+                    const dot = document.createElementNS(NS, 'circle');
+                    const dx = padX + (c / cols) * (w - padX * 2);
+                    const dy = padY + (r / rows) * (h - padY * 2);
+                    dot.setAttribute('cx', dx.toFixed(2));
+                    dot.setAttribute('cy', dy.toFixed(2));
+                    dot.setAttribute('r', (c % 6 === 0 && r % 5 === 0) ? '1.6' : '1.1');
+                    dot.setAttribute('fill', (c % 6 === 0 && r % 5 === 0) ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.10)');
+                    svg.appendChild(dot);
+                }
+            }
+
+            // 轴线 + 中心基准线（四象限结构）
+            const ax = document.createElementNS(NS, 'path');
+            ax.setAttribute('d', `M${padX} ${h - padY} H${w - padX}`);
+            ax.setAttribute('stroke', 'rgba(255,255,255,0.10)');
+            ax.setAttribute('stroke-width', '1.2');
+            svg.appendChild(ax);
+            const ay = document.createElementNS(NS, 'path');
+            ay.setAttribute('d', `M${padX} ${padY} V${h - padY}`);
+            ay.setAttribute('stroke', 'rgba(255,255,255,0.10)');
+            ay.setAttribute('stroke-width', '1.2');
+            svg.appendChild(ay);
+
+            const cxLine = document.createElementNS(NS, 'path');
+            cxLine.setAttribute('d', `M${midX} ${padY} V${h - padY}`);
+            cxLine.setAttribute('stroke', 'rgba(34,211,238,0.16)');
+            cxLine.setAttribute('stroke-width', '1');
+            cxLine.setAttribute('stroke-dasharray', '5 4');
+            svg.appendChild(cxLine);
+
+            const cyLine = document.createElementNS(NS, 'path');
+            cyLine.setAttribute('d', `M${padX} ${midY} H${w - padX}`);
+            cyLine.setAttribute('stroke', 'rgba(168,85,247,0.16)');
+            cyLine.setAttribute('stroke-width', '1');
+            cyLine.setAttribute('stroke-dasharray', '5 4');
+            svg.appendChild(cyLine);
+
+            // 横轴：横向排列；纵轴：竖着排列
+            function axisLabelHorizontal(x, y, text, anchor) {
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', x);
+                t.setAttribute('y', y);
+                t.setAttribute('fill', 'rgba(226,232,240,0.78)');
+                t.setAttribute('font-size', '9');
+                t.setAttribute('text-anchor', anchor || 'start');
+                t.textContent = text;
+                svg.appendChild(t);
+            }
+            function axisLabelVertical(x, y, text) {
+                const g = document.createElementNS(NS, 'g');
+                g.setAttribute('transform', `rotate(-90, ${x}, ${y})`);
+                const t = document.createElementNS(NS, 'text');
+                t.setAttribute('x', x);
+                t.setAttribute('y', y);
+                t.setAttribute('fill', 'rgba(226,232,240,0.78)');
+                t.setAttribute('font-size', '9');
+                t.setAttribute('text-anchor', 'start');
+                t.textContent = text;
+                g.appendChild(t);
+                svg.appendChild(g);
+            }
+            axisLabelHorizontal(padX.toFixed(2), (h - padY + 14).toFixed(2), '理性（结构/计划）', 'start');
+            axisLabelHorizontal((w - padX).toFixed(2), (h - padY + 14).toFixed(2), '直觉（冲动/灵感）', 'end');
+            axisLabelVertical((padX + 10).toFixed(2), (padY + 20).toFixed(2), '发散（冒险/创造）');
+            axisLabelVertical((padX + 10).toFixed(2), (h - padY - 12).toFixed(2), '收敛（稳态/防御）');
+
+            // 刻度（不加数字，只加短刻度）
+            for (let i = 0; i <= 10; i++) {
+                const tx = padX + (i / 10) * (w - padX * 2);
+                const tick = document.createElementNS(NS, 'path');
+                tick.setAttribute('d', `M${tx.toFixed(2)} ${(h - padY).toFixed(2)} V${(h - padY + 5).toFixed(2)}`);
+                tick.setAttribute('stroke', 'rgba(255,255,255,0.14)');
+                tick.setAttribute('stroke-width', '1');
+                svg.appendChild(tick);
+            }
+            for (let i = 0; i <= 6; i++) {
+                const ty = padY + (i / 6) * (h - padY * 2);
+                const tick = document.createElementNS(NS, 'path');
+                tick.setAttribute('d', `M${padX.toFixed(2)} ${ty.toFixed(2)} H${(padX - 5).toFixed(2)}`);
+                tick.setAttribute('stroke', 'rgba(255,255,255,0.14)');
+                tick.setAttribute('stroke-width', '1');
+                svg.appendChild(tick);
+            }
+
+            // 从“中性点”到“你的位置”的向量线
+            const vec = document.createElementNS(NS, 'path');
+            vec.setAttribute('d', `M${midX.toFixed(2)} ${midY.toFixed(2)} L${cx.toFixed(2)} ${cy.toFixed(2)}`);
+            vec.setAttribute('stroke', 'url(#plotGrad)');
+            vec.setAttribute('stroke-width', '2');
+            vec.setAttribute('opacity', '0.28');
+            vec.setAttribute('filter', 'url(#plotGlow)');
+            svg.appendChild(vec);
+
+            // 高亮点：外环 + 内核
+            const halo = document.createElementNS(NS, 'circle');
+            halo.setAttribute('cx', cx.toFixed(2));
+            halo.setAttribute('cy', cy.toFixed(2));
+            halo.setAttribute('r', '10');
+            halo.setAttribute('fill', 'none');
+            halo.setAttribute('stroke', 'url(#plotGrad)');
+            halo.setAttribute('stroke-width', '2');
+            halo.setAttribute('opacity', '0.65');
+            halo.setAttribute('filter', 'url(#plotGlow)');
+            svg.appendChild(halo);
+
+            const core = document.createElementNS(NS, 'circle');
+            core.setAttribute('cx', cx.toFixed(2));
+            core.setAttribute('cy', cy.toFixed(2));
+            core.setAttribute('r', '4.2');
+            core.setAttribute('fill', 'url(#plotGrad)');
+            core.setAttribute('filter', 'url(#plotGlow)');
+            svg.appendChild(core);
+
+            const label = document.createElementNS(NS, 'text');
+            const offX = cx > (w - padX - 60) ? -12 : 12;
+            const offY = cy < (padY + 18) ? 18 : -10;
+            label.setAttribute('x', (cx + offX).toFixed(2));
+            label.setAttribute('y', (cy + offY).toFixed(2));
+            label.setAttribute('fill', 'rgba(226,232,240,0.72)');
+            label.setAttribute('font-size', '10');
+            label.setAttribute('text-anchor', offX < 0 ? 'end' : 'start');
+            label.textContent = '你在这里';
+            svg.appendChild(label);
+
+            // 一句话结论 + 标签（放在 SVG 外面，避免重叠）
+            const quadX = x >= 0.5 ? '直觉' : '理性';
+            const quadY = y >= 0.5 ? '发散' : '收敛';
+            const quadrant =
+                (quadX === '理性' && quadY === '发散') ? '理性·发散（策略扩张）' :
+                (quadX === '直觉' && quadY === '发散') ? '直觉·发散（灵感漫游）' :
+                (quadX === '理性' && quadY === '收敛') ? '理性·收敛（稳控推进）' :
+                '直觉·收敛（敏感守城）';
+
+            const yes = state.score > 28;
+            const urgency = yes ? (y >= 0.5 ? '适合发起' : '适合推进') : (y >= 0.5 ? '适合换赛道' : '适合暂停');
+            const pace = x >= 0.5 ? '跟随直觉，但用边界兜底' : '按计划走，但给自己留弹性';
+            const verdict = document.getElementById('plot-verdict');
+            if (verdict) {
+                verdict.innerText = `你落在「${quadrant}」。当前策略：${urgency}。建议：${pace}。`;
+            }
+
+            const tagsEl = document.getElementById('plot-tags');
+            if (tagsEl) {
+                const tags = [];
+                tags.push(yes ? '推进' : '观望');
+                tags.push(y >= 0.5 ? '扩张' : '收束');
+                tags.push(x >= 0.5 ? '直觉优先' : '结构优先');
+                tags.push(state.score >= 40 ? '强信号' : state.score <= 22 ? '低信号' : '中信号');
+                tags.push('设边界');
+                tags.push('控节奏');
+
+                tagsEl.innerHTML = tags.map(t => {
+                    const tone = t === '推进' ? 'border-cyan-400/25 text-cyan-200 bg-cyan-400/5' :
+                                 t === '观望' ? 'border-purple-400/25 text-purple-200 bg-purple-400/5' :
+                                 'border-white/10 text-slate-100/80 bg-white/5';
+                    return `<span class="px-2.5 py-1 rounded-full text-[10px] border ${tone}">${t}</span>`;
+                }).join('');
+            }
+        }
+
+        function takeScreenshot() {
+            const target = document.getElementById('poster') || document.getElementById('capture-area');
+            const prevScrollY = window.scrollY;
+            document.body.classList.add('is-capturing');
+            window.scrollTo(0, 0);
+
+            html2canvas(target, {
+                backgroundColor: '#0f172a',
+                scale: Math.min(2.4, window.devicePixelRatio || 2),
+                useCORS: true,
+                allowTaint: true,
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: document.documentElement.clientWidth,
+                windowHeight: document.documentElement.clientHeight
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '我的时空答案海报.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).finally(() => {
+                window.scrollTo(0, prevScrollY);
+                document.body.classList.remove('is-capturing');
+            });
+        }
+
+        renderOptions();
+    </script>
+</body>
+</html>
